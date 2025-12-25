@@ -1,0 +1,85 @@
+############################
+# OS / Editor
+############################
+.DS_Store
+Thumbs.db
+
+.vscode/
+.idea/
+
+############################
+# Python
+############################
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.Python
+.pytest_cache/
+.coverage
+htmlcov/
+
+############################
+# Virtual Environment
+############################
+.venv/
+venv/
+env/
+ENV/
+
+############################
+# Python packaging
+############################
+*.egg-info/
+dist/
+build/
+
+############################
+# Application runtime data
+############################
+# SQLite DB (local / docker-compose用)
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+
+############################
+# Logs
+############################
+*.log
+
+############################
+# Environment variables
+############################
+.env
+.env.*
+!.env.example
+
+############################
+# Docker
+############################
+# Docker build cache / local overrides
+docker-compose.override.yml
+
+############################
+# Kubernetes / Helm
+############################
+# Helm local artifacts
+charts/
+*.tgz
+
+# Helm values override (環境依存)
+values-*.yaml
+
+############################
+# Argo CD
+############################
+# Argo CD generated or local files (if any)
+argocd/*.bak
+
+############################
+# Test artifacts
+############################
+.pytest_cache/
+test-results/
+
