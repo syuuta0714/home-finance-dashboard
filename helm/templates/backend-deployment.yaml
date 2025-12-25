@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.backend.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "home-finance.backend.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "home-finance.backend.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "home-finance.backend.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: backend
+        image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+        imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.backend.service.port }}
+          protocol: TCP
+        env:
+        - name: DATABASE_URL
+          value: {{ .Values.backend.env.databaseUrl | quote }}
+        - name: TZ
+          value: {{ .Values.backend.env.timezone | quote }}
+        - name: LOG_LEVEL
+          value: {{ .Values.backend.env.logLevel | quote }}
+        - name: CORS_ORIGINS
+          value: {{ .Values.backend.env.corsOrigins | quote }}
+        volumeMounts:
+        - name: data
+          mountPath: {{ .Values.persistence.mountPath }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.backend.livenessProbe.httpGet.path }}
+            port: {{ .Values.backend.livenessProbe.httpGet.port }}
+          initialDelaySeconds: {{ .Values.backend.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.backend.livenessProbe.periodSeconds }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.backend.readinessProbe.httpGet.path }}
+            port: {{ .Values.backend.readinessProbe.httpGet.port }}
+          initialDelaySeconds: {{ .Values.backend.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.backend.readinessProbe.periodSeconds }}
+        resources:
+          requests:
+            memory: {{ .Values.backend.resources.requests.memory }}
+            cpu: {{ .Values.backend.resources.requests.cpu }}
+          limits:
+            memory: {{ .Values.backend.resources.limits.memory }}
+            cpu: {{ .Values.backend.resources.limits.cpu }}
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: {{ .Values.persistence.name }}

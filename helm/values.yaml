@@ -1,0 +1,93 @@
+# Default values for home-finance
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+namespace: home-finance
+
+# Backend configuration
+backend:
+  name: home-finance-backend
+  replicaCount: 1
+  image:
+    repository: home-finance-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8000
+  env:
+    databaseUrl: "sqlite:////data/home_finance.db"
+    timezone: "Asia/Tokyo"
+    logLevel: "INFO"
+    corsOrigins: '["*"]'
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "500m"
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 10
+    periodSeconds: 30
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+# Frontend configuration
+frontend:
+  name: home-finance-frontend
+  replicaCount: 1
+  image:
+    repository: home-finance-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8501
+  env:
+    backendUrl: "http://home-finance-backend:8000"
+    timezone: "Asia/Tokyo"
+    autoRefreshInterval: "30"
+    kioskMode: "false"
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  livenessProbe:
+    httpGet:
+      path: /_stcore/health
+      port: 8501
+    initialDelaySeconds: 10
+    periodSeconds: 30
+  readinessProbe:
+    httpGet:
+      path: /_stcore/health
+      port: 8501
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+# Persistent Volume Claim configuration
+persistence:
+  enabled: true
+  name: home-finance-data
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  storageClassName: local-path
+  mountPath: /data
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: traefik
+  host: home-finance.local
+  annotations: {}

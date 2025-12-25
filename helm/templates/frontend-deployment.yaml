@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.frontend.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "home-finance.frontend.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.frontend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "home-finance.frontend.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "home-finance.frontend.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: frontend
+        image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+        imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.frontend.service.port }}
+          protocol: TCP
+        env:
+        - name: BACKEND_URL
+          value: {{ .Values.frontend.env.backendUrl | quote }}
+        - name: TZ
+          value: {{ .Values.frontend.env.timezone | quote }}
+        - name: AUTO_REFRESH_INTERVAL
+          value: {{ .Values.frontend.env.autoRefreshInterval | quote }}
+        - name: KIOSK_MODE
+          value: {{ .Values.frontend.env.kioskMode | quote }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.frontend.livenessProbe.httpGet.path }}
+            port: {{ .Values.frontend.livenessProbe.httpGet.port }}
+          initialDelaySeconds: {{ .Values.frontend.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.frontend.livenessProbe.periodSeconds }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.frontend.readinessProbe.httpGet.path }}
+            port: {{ .Values.frontend.readinessProbe.httpGet.port }}
+          initialDelaySeconds: {{ .Values.frontend.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.frontend.readinessProbe.periodSeconds }}
+        resources:
+          requests:
+            memory: {{ .Values.frontend.resources.requests.memory }}
+            cpu: {{ .Values.frontend.resources.requests.cpu }}
+          limits:
+            memory: {{ .Values.frontend.resources.limits.memory }}
+            cpu: {{ .Values.frontend.resources.limits.cpu }}

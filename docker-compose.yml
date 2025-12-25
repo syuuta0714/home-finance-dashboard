@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: home-finance-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
+      - ./backend:/app
+    environment:
+      - DATABASE_URL=sqlite:////data/home_finance.db
+      - TZ=Asia/Tokyo
+      - LOG_LEVEL=INFO
+      - CORS_ORIGINS=["*"]
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - home-finance-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: home-finance-frontend
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./frontend:/app
+    environment:
+      - BACKEND_URL=http://backend:8000
+      - TZ=Asia/Tokyo
+      - AUTO_REFRESH_INTERVAL=30
+      - KIOSK_MODE=false
+    command: streamlit run app/main.py --server.port=8501 --server.address=0.0.0.0
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - home-finance-network
+
+volumes:
+  data:
+    driver: local
+
+networks:
+  home-finance-network:
+    driver: bridge
