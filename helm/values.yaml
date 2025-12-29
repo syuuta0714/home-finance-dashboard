@@ -9,7 +9,7 @@ backend:
   name: home-finance-backend
   replicaCount: 1
   image:
-    repository: home-finance-backend
+    repository: ghcr.io/syuuta0714/home-finance-backend
     tag: QA_v1.0.1
     pullPolicy: IfNotPresent
   service:
@@ -45,7 +45,7 @@ frontend:
   name: home-finance-frontend
   replicaCount: 1
   image:
-    repository: home-finance-frontend
+    repository: ghcr.io/syuuta0714/home-finance-frontend
     tag: QA_v1.0.1
     pullPolicy: IfNotPresent
   service:
