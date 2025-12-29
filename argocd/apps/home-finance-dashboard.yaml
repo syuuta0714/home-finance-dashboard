@@ -6,12 +6,12 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/[user]/home-finance.git
+    repoURL: https://github.com/syuuta0714/home-finance-dashboard.git
     targetRevision: main
     path: helm
     helm:
       valueFiles:
-      - values.yaml
+        - values.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: home-finance
@@ -20,4 +20,4 @@ spec:
       prune: true
       selfHeal: true
     syncOptions:
-    - CreateNamespace=true
+      - CreateNamespace=true
