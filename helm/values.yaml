@@ -9,8 +9,8 @@ backend:
   name: home-finance-backend
   replicaCount: 1
   image:
-    repository: ghcr.io/syuuta0714/home-finance-backend
-    tag: latest
+    repository: home-finance-backend
+    tag: QA_v1.0.0
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
@@ -45,8 +45,8 @@ frontend:
   name: home-finance-frontend
   replicaCount: 1
   image:
-    repository: ghcr.io/syuuta0714/home-finance-frontend
-    tag: latest
+    repository: home-finance-frontend
+    tag: QA_v1.0.0
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
