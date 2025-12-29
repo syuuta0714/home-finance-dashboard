@@ -10,7 +10,7 @@ backend:
   replicaCount: 1
   image:
     repository: home-finance-backend
-    tag: QA_v1.0.0
+    tag: QA_v1.0.1
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
@@ -46,7 +46,7 @@ frontend:
   replicaCount: 1
   image:
     repository: home-finance-frontend
-    tag: QA_v1.0.0
+    tag: QA_v1.0.1
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
