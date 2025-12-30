@@ -89,5 +89,7 @@ persistence:
 ingress:
   enabled: true
   className: traefik
-  host: home-finance.local
+  host: ""
   annotations: {}
+
+
