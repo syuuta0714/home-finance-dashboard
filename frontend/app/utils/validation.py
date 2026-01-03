@@ -120,22 +120,20 @@ def validate_memo(memo: Optional[str], max_length: int = 500) -> Tuple[bool, Opt
     return True, None
 
 
-# Predefined categories
-CATEGORIES = [
-    "食費",
-    "日用品",
-    "交通費",
-    "娯楽",
-    "医療費",
-    "その他"
-]
-
-
 def get_categories() -> list[str]:
     """
-    Get list of available categories
+    Get list of available categories from the backend API
     
     Returns:
-        List of category names
+        List of category IDs (e.g., ['housing', 'food', 'utilities', ...])
+        Falls back to empty list if API call fails
     """
-    return CATEGORIES.copy()
+    try:
+        from app.api_client import api_client
+        categories = api_client.get_categories()
+        # Return category IDs sorted by name
+        return sorted([cat["id"] for cat in categories if cat.get("is_active", True)])
+    except Exception:
+        # Fallback to empty list if API call fails
+        # This allows the form to still render even if the API is temporarily unavailable
+        return []

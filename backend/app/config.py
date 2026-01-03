@@ -3,10 +3,13 @@
 import os
 from typing import List
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 
 
 class Settings(BaseSettings):
     """Application settings"""
+    
+    model_config = ConfigDict(extra='ignore')
     
     # Database
     database_url: str = "sqlite:////data/home_finance.db"
@@ -22,10 +25,6 @@ class Settings(BaseSettings):
     
     # API
     api_prefix: str = "/api"
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
 
 
 # Global settings instance

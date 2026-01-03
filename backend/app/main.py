@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from app.config import settings
-from app.routers import health, budgets, expenses, summary
+from app.routers import health, budgets, expenses, summary, categories, monthly_budgets
 from app.database import init_db
 
 # Configure logging
@@ -71,6 +71,8 @@ app.include_router(health.router, tags=["health"])
 app.include_router(budgets.router, tags=["budgets"])
 app.include_router(expenses.router, tags=["expenses"])
 app.include_router(summary.router, tags=["summary"])
+app.include_router(categories.router, tags=["categories"])
+app.include_router(monthly_budgets.router, tags=["monthly_budgets"])
 
 
 # Startup event

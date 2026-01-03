@@ -121,3 +121,22 @@ async def delete_expense(
         )
     
     return {"message": "deleted"}
+
+
+@router.get("/api/expenses/statistics/{month}")
+async def get_expense_statistics(
+    month: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get expense statistics grouped by category for a specific month.
+    
+    Args:
+        month: Month in YYYY-MM format
+        db: Database session
+        
+    Returns:
+        Dictionary with category as key and total amount as value
+    """
+    service = ExpenseService(db, timezone=settings.timezone)
+    return service.get_expenses_summary_by_category(month)

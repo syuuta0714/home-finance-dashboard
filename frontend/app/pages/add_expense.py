@@ -21,13 +21,30 @@ def render():
     
     # Create form
     with st.form("add_expense_form", clear_on_submit=True):
-        # Category selection
-        categories = get_categories()
-        category = st.selectbox(
-            "カテゴリ *",
-            options=categories,
-            help="支出のカテゴリを選択してください"
-        )
+        # Get categories from API
+        try:
+            from app.api_client import api_client
+            categories_data = api_client.get_categories()
+            # Create mapping from ID to name for display
+            category_options = {cat["id"]: cat["name"] for cat in categories_data if cat.get("is_active", True)}
+            category_ids = sorted(category_options.keys())
+            
+            if not category_ids:
+                st.error("❌ カテゴリーが取得できません。バックエンドを確認してください。")
+                return
+            
+            # Display category names but store IDs
+            category_display = [category_options[cid] for cid in category_ids]
+            selected_index = st.selectbox(
+                "カテゴリ *",
+                options=range(len(category_display)),
+                format_func=lambda i: category_display[i],
+                help="支出のカテゴリを選択してください"
+            )
+            category_id = category_ids[selected_index]
+        except Exception as e:
+            st.error(f"❌ カテゴリーの取得に失敗しました: {str(e)}")
+            return
         
         # Amount input
         amount = st.number_input(
@@ -61,7 +78,7 @@ def render():
             errors = []
             
             # Validate category
-            is_valid, error_msg = validate_category(category)
+            is_valid, error_msg = validate_category(category_id)
             if not is_valid:
                 errors.append(error_msg)
             
@@ -91,7 +108,7 @@ def render():
                     with st.spinner("登録中..."):
                         result = api_client.create_expense(
                             date=date_str,
-                            category=category,
+                            category=category_id,
                             amount=amount,
                             memo=memo if memo else None
                         )
@@ -121,6 +138,10 @@ def render():
     try:
         with st.spinner("読み込み中..."):
             expenses = api_client.get_expenses()
+            categories_data = api_client.get_categories()
+        
+        # Create mapping from ID to name
+        category_map = {cat["id"]: cat["name"] for cat in categories_data}
         
         if expenses:
             # Sort by date (most recent first)
@@ -134,7 +155,9 @@ def render():
                     st.text(expense["date"])
                 
                 with col2:
-                    st.text(expense["category"])
+                    # Display category name instead of ID
+                    category_name = category_map.get(expense["category"], expense["category"])
+                    st.text(category_name)
                 
                 with col3:
                     st.text(f"¥{expense['amount']:,}")
