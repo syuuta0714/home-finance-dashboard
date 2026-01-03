@@ -2,12 +2,7 @@
 
 import streamlit as st
 from app.api_client import api_client, APIError
-from app.utils.validation import (
-    validate_month,
-    validate_amount,
-    validate_category,
-    get_categories
-)
+from app.utils.validation import validate_month
 from app.utils.formatting import get_current_month, format_month, format_currency
 
 
@@ -33,17 +28,21 @@ def render():
     
     st.markdown(f"### {format_month(selected_month)} の予算設定")
     
-    # Load existing budgets for the month
-    existing_budgets = {}
+    # Load categories and existing budgets
     try:
-        with st.spinner("既存の予算を読み込み中..."):
-            budgets = api_client.get_budgets(month=selected_month)
-            for budget in budgets:
-                existing_budgets[budget["category"]] = budget
+        with st.spinner("カテゴリーと既存予算を読み込み中..."):
+            categories_data = api_client.get_categories()
+            monthly_budgets = api_client.get_monthly_budgets(month=selected_month)
     except APIError as e:
-        st.warning(f"⚠️ 既存予算の取得に失敗しました: {e.message}")
+        st.error(f"❌ データの取得に失敗しました: {e.message}")
+        return
     except Exception as e:
-        st.warning(f"⚠️ 予期しないエラーが発生しました: {str(e)}")
+        st.error(f"❌ 予期しないエラーが発生しました: {str(e)}")
+        return
+    
+    # Create mapping from category ID to name and existing budgets
+    category_map = {cat["id"]: cat["name"] for cat in categories_data if cat.get("is_active", True)}
+    existing_budgets = {b["category_id"]: b for b in monthly_budgets}
     
     # Display total budget if exists
     if existing_budgets:
@@ -53,27 +52,27 @@ def render():
     st.divider()
     
     # Budget input form for each category
-    categories = get_categories()
     budget_inputs = {}
     
     st.markdown("#### カテゴリ別予算入力")
     
-    for category in categories:
+    for category_id in sorted(category_map.keys()):
+        category_name = category_map[category_id]
         col1, col2 = st.columns([2, 3])
         
         with col1:
-            st.markdown(f"**{category}**")
+            st.markdown(f"**{category_name}**")
         
         with col2:
             # Get existing amount or default to 0
-            existing_amount = existing_budgets.get(category, {}).get("amount", 0)
+            existing_amount = existing_budgets.get(category_id, {}).get("amount", 0)
             
-            budget_inputs[category] = st.number_input(
+            budget_inputs[category_id] = st.number_input(
                 f"金額（円）",
                 min_value=0,
                 value=existing_amount,
                 step=1000,
-                key=f"budget_{category}",
+                key=f"budget_{category_id}",
                 label_visibility="collapsed"
             )
     
@@ -92,32 +91,26 @@ def render():
             errors = []
             success_count = 0
             
-            for category, amount in budget_inputs.items():
-                # Validate amount
-                is_valid, error_msg = validate_amount(amount)
-                if not is_valid:
-                    errors.append(f"{category}: {error_msg}")
-                    continue
-                
+            for category_id, amount in budget_inputs.items():
                 # Skip if amount is 0 and no existing budget
-                if amount == 0 and category not in existing_budgets:
+                if amount == 0 and category_id not in existing_budgets:
                     continue
                 
                 # Save budget
                 try:
-                    with st.spinner(f"{category}を保存中..."):
-                        result = api_client.create_budget(
+                    with st.spinner(f"{category_map[category_id]}を保存中..."):
+                        result = api_client.create_monthly_budget(
                             month=selected_month,
-                            category=category,
+                            category_id=category_id,
                             amount=amount
                         )
                     success_count += 1
                 
                 except APIError as e:
-                    errors.append(f"{category}: {e.message}")
+                    errors.append(f"{category_map[category_id]}: {e.message}")
                 
                 except Exception as e:
-                    errors.append(f"{category}: {str(e)}")
+                    errors.append(f"{category_map[category_id]}: {str(e)}")
             
             # Display results
             if errors:
@@ -144,25 +137,26 @@ def render():
         st.divider()
         st.markdown("### 📋 登録済み予算")
         
-        for category in categories:
-            if category in existing_budgets:
-                budget = existing_budgets[category]
+        for category_id in sorted(category_map.keys()):
+            if category_id in existing_budgets:
+                budget = existing_budgets[category_id]
+                category_name = category_map[category_id]
                 
                 col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
                 
                 with col1:
-                    st.text(category)
+                    st.text(category_name)
                 
                 with col2:
                     st.text(format_currency(budget["amount"]))
                 
                 with col3:
-                    st.caption(f"更新: {budget['updated_at'][:10]}")
+                    st.caption(f"更新: {budget.get('updated_at', 'N/A')[:10]}")
                 
                 with col4:
                     if st.button("🗑️", key=f"delete_budget_{budget['id']}", help="削除"):
                         try:
-                            api_client.delete_budget(budget["id"])
+                            api_client.delete_monthly_budget(budget["id"])
                             st.success("削除しました")
                             st.rerun()
                         except APIError as e:

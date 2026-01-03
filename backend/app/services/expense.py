@@ -117,3 +117,24 @@ class ExpenseService:
             True if deleted, False if not found
         """
         return self.repository.delete_by_id(expense_id)
+    
+    def get_expenses_summary_by_category(self, month: str) -> dict:
+        """
+        Get expense summary grouped by category for a specific month.
+        
+        Args:
+            month: Month in YYYY-MM format
+            
+        Returns:
+            Dictionary with category as key and total amount as value
+        """
+        expense_models = self.repository.get_by_month(month)
+        summary = {}
+        
+        for expense in expense_models:
+            category = expense.category
+            if category not in summary:
+                summary[category] = 0
+            summary[category] += expense.amount
+        
+        return summary

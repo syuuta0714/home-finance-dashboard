@@ -48,6 +48,9 @@ with st.sidebar:
     if st.button("💰 予算管理", use_container_width=True):
         st.session_state.page = "manage_budget"
     
+    if st.button("📊 支出統計", use_container_width=True):
+        st.session_state.page = "expense_statistics"
+    
     st.divider()
     st.caption(f"Backend: {settings.backend_url}")
     st.caption(f"Timezone: {settings.timezone}")
@@ -64,3 +67,6 @@ elif st.session_state.page == "add_expense":
 elif st.session_state.page == "manage_budget":
     from app.pages import manage_budget
     manage_budget.render()
+elif st.session_state.page == "expense_statistics":
+    from app.pages import expense_statistics
+    expense_statistics.render()

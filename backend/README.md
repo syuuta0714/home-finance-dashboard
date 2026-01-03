@@ -251,6 +251,150 @@ curl -X DELETE http://localhost:8000/api/expenses/1
 
 ---
 
+#### カテゴリ管理
+
+**GET /api/categories**
+
+カテゴリ一覧を取得します。
+
+クエリパラメータ:
+- `type` (optional): カテゴリタイプでフィルタ（fixed, variable, lifestyle, event）
+
+```bash
+# 全カテゴリ取得
+curl http://localhost:8000/api/categories
+
+# 特定タイプのカテゴリ取得
+curl http://localhost:8000/api/categories?type=fixed
+```
+
+レスポンス:
+```json
+[
+  {
+    "id": "housing",
+    "name": "住居",
+    "type": "fixed",
+    "is_active": true,
+    "note": "住宅ローン・家賃"
+  },
+  {
+    "id": "food",
+    "name": "食費",
+    "type": "variable",
+    "is_active": true,
+    "note": "食材・外食"
+  }
+]
+```
+
+**GET /api/categories/{category_id}**
+
+カテゴリの詳細を取得します。
+
+```bash
+curl http://localhost:8000/api/categories/housing
+```
+
+---
+
+#### 月次予算管理
+
+**POST /api/monthly-budgets**
+
+月次予算を登録または更新します（同じ月・カテゴリの組み合わせは上書き）。
+
+リクエスト:
+```bash
+curl -X POST http://localhost:8000/api/monthly-budgets \
+  -H "Content-Type: application/json" \
+  -d '{
+    "month": "2025-12",
+    "category_id": "food",
+    "amount": 90000
+  }'
+```
+
+レスポンス:
+```json
+{
+  "id": 1,
+  "month": "2025-12",
+  "category_id": "food",
+  "amount": 90000,
+  "created_at": "2025-12-25T10:00:00+09:00",
+  "updated_at": "2025-12-25T10:00:00+09:00"
+}
+```
+
+**GET /api/monthly-budgets**
+
+月次予算一覧を取得します。
+
+クエリパラメータ:
+- `month` (required): 月（YYYY-MM形式）
+- `category_type` (optional): カテゴリタイプでフィルタ（fixed, variable, lifestyle, event）
+
+```bash
+# 特定月の全予算取得
+curl http://localhost:8000/api/monthly-budgets?month=2025-12
+
+# 特定月の固定費予算のみ取得
+curl http://localhost:8000/api/monthly-budgets?month=2025-12&category_type=fixed
+```
+
+レスポンス:
+```json
+[
+  {
+    "category_id": "housing",
+    "category_name": "住居",
+    "category_type": "fixed",
+    "amount": 50656
+  },
+  {
+    "category_id": "food",
+    "category_name": "食費",
+    "category_type": "variable",
+    "amount": 90000
+  }
+]
+```
+
+**GET /api/monthly-budgets/{budget_id}**
+
+月次予算の詳細を取得します。
+
+```bash
+curl http://localhost:8000/api/monthly-budgets/1
+```
+
+**DELETE /api/monthly-budgets/{budget_id}**
+
+月次予算を削除します。
+
+```bash
+curl -X DELETE http://localhost:8000/api/monthly-budgets/1
+```
+
+**GET /api/monthly-budgets/summary/{month}**
+
+月次予算の合計を取得します。
+
+```bash
+curl http://localhost:8000/api/monthly-budgets/summary/2025-12
+```
+
+レスポンス:
+```json
+{
+  "month": "2025-12",
+  "total_budget": 325856
+}
+```
+
+---
+
 #### 月次集計
 
 **GET /api/summary**
@@ -286,14 +430,30 @@ curl http://localhost:8000/api/summary?month=2025-12
 
 ### カテゴリ一覧
 
-現在サポートされているカテゴリ（将来的に編集可能にする予定）：
+新しいカテゴリシステムでは、以下の14個の標準カテゴリをサポートしています：
 
-- 食費
-- 日用品
-- 交通費
-- 娯楽
-- 医療費
-- その他
+| ID | 名前 | タイプ | 説明 |
+|---|---|---|---|
+| housing | 住居 | fixed | 住宅ローン・家賃 |
+| utilities | 光熱費 | fixed | 電気・ガス・水道 |
+| communication | 通信費 | fixed | 携帯・インターネット |
+| insurance | 保険 | fixed | 生命保険・損害保険 |
+| taxes | 税金 | fixed | 所得税・住民税・固定資産税 |
+| food | 食費 | variable | 食材・外食 |
+| daily_goods | 日用品 | variable | 日用雑貨・消耗品 |
+| transportation | 交通費 | variable | ガソリン・公共交通 |
+| medical | 医療費 | variable | 医療・薬 |
+| entertainment | 娯楽・趣味 | lifestyle | 映画・本・ゲーム |
+| social | 交際費 | lifestyle | 飲み会・プレゼント |
+| clothing | 被服・美容 | lifestyle | 衣類・美容 |
+| education | 教育 | event | 学費・教材 |
+| special | 特別支出 | event | 旅行・家電・突発費 |
+
+カテゴリタイプ:
+- **fixed**: 固定費（毎月ほぼ同じ金額）
+- **variable**: 変動費（月によって変わる）
+- **lifestyle**: ライフスタイル関連（趣味・交際など）
+- **event**: イベント・特別支出（不定期）
 
 ### エラーレスポンス
 
@@ -325,23 +485,32 @@ backend/
 │   ├── database.py          # データベース接続
 │   ├── models/              # SQLAlchemyモデル
 │   │   ├── budget.py
-│   │   └── expense.py
+│   │   ├── category.py      # カテゴリマスタ
+│   │   ├── expense.py
+│   │   └── monthly_budget.py # 月次予算
 │   ├── schemas/             # Pydanticスキーマ
 │   │   ├── budget.py
+│   │   ├── category.py      # カテゴリスキーマ
 │   │   ├── expense.py
 │   │   └── summary.py
 │   ├── repositories/        # データアクセス層
 │   │   ├── base.py
 │   │   ├── budget.py
-│   │   └── expense.py
+│   │   ├── category.py      # カテゴリリポジトリ
+│   │   ├── expense.py
+│   │   └── monthly_budget.py # 月次予算リポジトリ
 │   ├── services/            # ビジネスロジック
 │   │   ├── budget.py
+│   │   ├── category.py      # カテゴリサービス
 │   │   ├── expense.py
+│   │   ├── monthly_budget.py # 月次予算サービス
 │   │   └── summary.py
 │   └── routers/             # APIエンドポイント
 │       ├── health.py
 │       ├── budgets.py
+│       ├── categories.py    # カテゴリAPI
 │       ├── expenses.py
+│       ├── monthly_budgets.py # 月次予算API
 │       └── summary.py
 ├── tests/                   # テストコード
 ├── Dockerfile

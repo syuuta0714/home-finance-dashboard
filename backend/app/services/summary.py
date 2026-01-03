@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 import pytz
 
 from app.repositories.budget import BudgetRepository
+from app.repositories.monthly_budget import MonthlyBudgetRepository
 from app.repositories.expense import ExpenseRepository
 from app.schemas.summary import Summary
 
@@ -23,12 +24,16 @@ class SummaryService:
             timezone: Timezone for date calculations (default: Asia/Tokyo)
         """
         self.budget_repository = BudgetRepository(db)
+        self.monthly_budget_repository = MonthlyBudgetRepository(db)
         self.expense_repository = ExpenseRepository(db)
         self.timezone = pytz.timezone(timezone)
     
     def calculate_summary(self, month: Optional[str] = None) -> Summary:
         """
         Calculate monthly summary with budget, expenses, and status.
+        
+        This method supports both legacy Budget and new MonthlyBudget models.
+        It prioritizes MonthlyBudget data if available, falling back to Budget data.
         
         Args:
             month: Month in YYYY-MM format (default: current month in configured timezone)
@@ -42,8 +47,8 @@ class SummaryService:
             month = now.strftime("%Y-%m")
         
         # 1. Get total budget for the month
-        budgets = self.budget_repository.get_by_month(month)
-        total_budget = sum(budget.amount for budget in budgets)
+        # Try to use MonthlyBudget first (new system), fall back to Budget (legacy system)
+        total_budget = self._get_total_budget(month)
         
         # 2. Get total spent for the month
         expenses = self.expense_repository.get_by_month(month)
@@ -115,6 +120,27 @@ class SummaryService:
             return last_day_num
         else:
             return 0
+    
+    def _get_total_budget(self, month: str) -> int:
+        """
+        Get total budget for a month, supporting both legacy and new systems.
+        
+        Tries to use MonthlyBudget (new system) first, falls back to Budget (legacy system).
+        
+        Args:
+            month: Month in YYYY-MM format
+            
+        Returns:
+            Total budget amount in yen
+        """
+        # Try to get from MonthlyBudget (new system)
+        monthly_budgets = self.monthly_budget_repository.get_by_month(month)
+        if monthly_budgets:
+            return sum(budget.amount for budget in monthly_budgets)
+        
+        # Fall back to Budget (legacy system)
+        budgets = self.budget_repository.get_by_month(month)
+        return sum(budget.amount for budget in budgets)
     
     def _determine_status(self, usage_rate: float) -> tuple[str, str, str]:
         """

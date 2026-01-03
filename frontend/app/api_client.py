@@ -248,6 +248,130 @@ class APIClient:
         response = self._request("DELETE", f"/api/expenses/{expense_id}")
         return response.json()
     
+    def get_expense_statistics(self, month: str) -> Dict[str, int]:
+        """
+        Get expense statistics grouped by category for a specific month
+        
+        Args:
+            month: Month in YYYY-MM format
+        
+        Returns:
+            Dictionary with category as key and total amount as value
+        """
+        response = self._request("GET", f"/api/expenses/statistics/{month}")
+        return response.json()
+    
+    # Category endpoints
+    
+    def get_categories(self, category_type: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        Get all categories, optionally filtered by type
+        
+        Args:
+            category_type: Optional category type filter (fixed, variable, lifestyle, event)
+        
+        Returns:
+            List of category data
+        """
+        params = {"type": category_type} if category_type else {}
+        response = self._request("GET", "/api/categories", params=params)
+        return response.json()
+    
+    def get_category(self, category_id: str) -> Dict[str, Any]:
+        """
+        Get category by ID
+        
+        Args:
+            category_id: Category ID
+        
+        Returns:
+            Category data
+        """
+        response = self._request("GET", f"/api/categories/{category_id}")
+        return response.json()
+    
+    # Monthly Budget endpoints
+    
+    def create_monthly_budget(self, month: str, category_id: str, amount: int) -> Dict[str, Any]:
+        """
+        Create or update monthly budget
+        
+        Args:
+            month: Month in YYYY-MM format
+            category_id: Category ID
+            amount: Budget amount in yen
+        
+        Returns:
+            Created/updated monthly budget data
+        """
+        response = self._request(
+            "POST",
+            "/api/monthly-budgets",
+            json={"month": month, "category_id": category_id, "amount": amount}
+        )
+        return response.json()
+    
+    def get_monthly_budgets(
+        self,
+        month: str,
+        category_type: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Get monthly budgets for a specific month
+        
+        Args:
+            month: Month in YYYY-MM format (required)
+            category_type: Optional category type filter
+        
+        Returns:
+            List of monthly budget data
+        """
+        params = {"month": month}
+        if category_type:
+            params["category_type"] = category_type
+        
+        response = self._request("GET", "/api/monthly-budgets", params=params)
+        return response.json()
+    
+    def get_monthly_budget(self, budget_id: int) -> Dict[str, Any]:
+        """
+        Get monthly budget by ID
+        
+        Args:
+            budget_id: Monthly budget ID
+        
+        Returns:
+            Monthly budget data
+        """
+        response = self._request("GET", f"/api/monthly-budgets/{budget_id}")
+        return response.json()
+    
+    def delete_monthly_budget(self, budget_id: int) -> Dict[str, Any]:
+        """
+        Delete monthly budget
+        
+        Args:
+            budget_id: Monthly budget ID
+        
+        Returns:
+            Deletion confirmation
+        """
+        response = self._request("DELETE", f"/api/monthly-budgets/{budget_id}")
+        return response.json()
+    
+    def get_monthly_budget_summary(self, month: str) -> Dict[str, Any]:
+        """
+        Get monthly budget summary
+        
+        Args:
+            month: Month in YYYY-MM format
+        
+        Returns:
+            Summary data with total budget amount
+        """
+        response = self._request("GET", f"/api/monthly-budgets/summary/{month}")
+        return response.json()
+    
     # Summary endpoint
     
     def get_summary(self, month: Optional[str] = None) -> Dict[str, Any]:

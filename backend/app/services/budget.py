@@ -39,6 +39,18 @@ class BudgetService:
         )
         return Budget.model_validate(budget_model)
     
+    def register_budget(self, budget_data: BudgetCreate) -> Budget:
+        """
+        Alias for register_or_update_budget for backward compatibility.
+        
+        Args:
+            budget_data: Budget creation data
+            
+        Returns:
+            Created or updated Budget schema
+        """
+        return self.register_or_update_budget(budget_data)
+    
     def get_budget_by_id(self, budget_id: int) -> Optional[Budget]:
         """
         Get a budget by ID.
